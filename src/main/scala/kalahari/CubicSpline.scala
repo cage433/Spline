@@ -1,9 +1,9 @@
 package kalahari
 
-
-
 /**
 	Code converted from Numerical Recipes in C
+  Can either specify gradient at the end points ( Some(grad) ) or use None to 
+  specify that the second derivative at the endpoints should be 0
 */
 class CubicSpline(x : Array[Double], y : Array[Double], yp1 : Option[Double], ypn : Option[Double]){
   val n = x.size
@@ -50,9 +50,7 @@ class CubicSpline(x : Array[Double], y : Array[Double], yp1 : Option[Double], yp
 	def this(x : Array[Double], y : Array[Double]){
 		this(x, y, None, None) 
 	}
-  def this(x : Vector, y : Vector){
-    this(x.toArray, y.toArray, None, None) 
-  }
+
 	def apply(x0 : Double) : Double = {
 		if(x.length == 1){
 			return y(0);
