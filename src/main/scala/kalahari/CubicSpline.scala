@@ -44,12 +44,6 @@ class CubicSpline(x : Array[Double], y : Array[Double], yp1 : Option[Double], yp
 			y2(i) = y2(i) * y2(i + 1) + u(i);
 		}
   }
-	/**
-		This creates a natural cubic spline with zero second derivative at the endpoints
-	*/
-	def this(x : Array[Double], y : Array[Double]){
-		this(x, y, None, None) 
-	}
 
 	def apply(x0 : Double) : Double = {
 		if(x.length == 1){
@@ -74,3 +68,27 @@ class CubicSpline(x : Array[Double], y : Array[Double], yp1 : Option[Double], yp
 		
 	}
 }
+
+object CubicSpline{
+
+	/**
+		This creates a natural cubic spline with zero second derivative at the endpoints
+	*/
+	def apply(x : Array[Double], y : Array[Double]) : CubicSpline = {
+		new CubicSpline(x, y, None, None) 
+	}
+
+	def apply(x : List[Double], y : List[Double]) : CubicSpline = {
+		new CubicSpline(x.toArray, y.toArray, None, None) 
+	}
+  def apply(points : List[(Double, Double)]) = new CubicSpline(
+    points.map(_._1).toArray,
+    points.map(_._2).toArray,
+    None,
+    None
+  )
+}
+
+
+
+
