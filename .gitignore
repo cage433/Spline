@@ -2,3 +2,5 @@ target
 edft
 tags
 *.swp
+*.~
+*.*~
