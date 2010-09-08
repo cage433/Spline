@@ -14,11 +14,9 @@ object Kalahari{
 					yield x * i + j).toArray
 	}}
 	def mysum(arr : Array[Double]) : Double = {
-		println("arr = " + arr.mkString(", "))
 		(0.0 /: arr)(_+_)
 	}
 	def mysum2(arr : Array[Any]) : Double = {
-		println("any arr = " + arr.mkString(", "))
 		(0.0 /: arr.filter(_.isInstanceOf[Double]).map(_.asInstanceOf[Double]))(_+_)
 	}
 
