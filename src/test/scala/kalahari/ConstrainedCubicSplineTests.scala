@@ -95,4 +95,36 @@ class ConstrainedCubicSplineTests extends FunSuite with TestUtils{
 		}
 	}
 
+	test("adding points"){
+		val curve = new ProperConstrainedSpline(
+			Map(
+				0.0 -> 0.0,
+				1.0 -> 1.0,
+				2.0 -> 1.5,
+				3.0 -> 1.8
+			)
+		)
+		val t0 = 0.5
+		val bound0 = curve.bound(t0)
+		val t1 = 2.5
+		val bound1 = curve.bound(t1)
+		val (low0, high0) = (bound0.lowPoint, bound0.highPoint)
+		val (low1, high1) = (bound1.lowPoint, bound1.highPoint)
+
+		val yFwdA = ConstrainedCurve.impliedForwardFromFrontAndBack(t0, low0, t1, high1)
+		assert(curve.canAddPoint(t0, t1, yFwdA))
+
+		val yFwdB = ConstrainedCurve.impliedForwardFromFrontAndBack(t0, low0 - 0.1, t1, high1)
+		assert(!curve.canAddPoint(t0, t1, yFwdB))
+
+		val yFwdC = ConstrainedCurve.impliedForwardFromFrontAndBack(t0, (low0 + high0) / 2.0, t1, high1)
+		assert(curve.canAddPoint(t0, t1, yFwdC))
+
+		val yFwdD = ConstrainedCurve.impliedForwardFromFrontAndBack(t0, low0, t1, high1 + 0.01)
+		assert(!curve.canAddPoint(t0, t1, yFwdD))
+
+		val yFwdE = ConstrainedCurve.impliedForwardFromFrontAndBack(t0, low0, t1, (low1 + high1) / 2.0)
+		assert(curve.canAddPoint(t0, t1, yFwdE))
+	}
+
 }

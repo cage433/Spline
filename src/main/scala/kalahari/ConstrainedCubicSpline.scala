@@ -6,11 +6,10 @@ trait ConstrainedCurve{
 	def addPoint(x1 : Double, x2 : Double, y : Double) : ConstrainedCurve
 	def apply(x : Double) : Double
 	def apply(t0 : Double, T : Double) : Double = {
-		if (T <= 0 ){
-			0.0
-		} else {
-			( apply(t0 + T) * (t0 + T) - apply(t0) * t0 ) / T
-		}
+		val t1 = t0 + T
+		val y0 = apply(t0)
+		val y1 = apply(t1)
+		ConstrainedCurve.impliedForwardFromFrontAndBack(t0, y0, t1, y1)
 	}
 	def almostEqual(x0 : Double, x1 : Double) = (x0 - x1).abs < eps
 	def distance(x1 : Double, x2 : Double, y : Double) : Double
@@ -29,6 +28,15 @@ object ConstrainedCurve{
 	def impliedBackFromForwardAndFront(tFront : Double, yFront : Double, T : Double, y : Double) : Double = {
 		val tBack = tFront + T
 		(yFront * tFront + y * T) / tBack
+	}
+
+	def impliedForwardFromFrontAndBack(
+		tFront : Double, 
+		yFront : Double,
+		tBack : Double,
+		yBack : Double
+	) : Double = {
+		(yBack * tBack - yFront * tFront) / (tBack - tFront)
 	}
 }
 
@@ -95,6 +103,7 @@ class ProperConstrainedSpline(x : Array[Double], y : Array[Double])
 		(y1 - newY1).abs
 	}
 
+	// for testing only
 		
 
 	def addPoint(x1 : Double, x2 : Double, y_ : Double) = {

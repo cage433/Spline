@@ -14,6 +14,8 @@ trait Bound{
 			Bound(high_.map(f), low_.map(f))
 		}
 	}
+	def lowPoint : Double
+	def highPoint : Double
 }
 
 object Bound{
@@ -34,6 +36,9 @@ case object EmptyBound extends Bound{
 	def intersection(other : Bound) = EmptyBound
 	override def isEmpty = true
 	def closestPoint(x : Double) = throw new Exception("EmptyBound")
+
+	def lowPoint : Double = throw new Exception
+	def highPoint : Double = throw new Exception
 }
 
 case class LowerBound(low : Double) extends Bound{
@@ -46,6 +51,8 @@ case class LowerBound(low : Double) extends Bound{
 	}
 	def closestPoint(x : Double) = if (contains(x)) x else low
 	override def low_ = Some(low)
+	def lowPoint : Double = low
+	def highPoint : Double = low + 1.0
 }
 
 case class UpperBound(high : Double) extends Bound{
@@ -58,6 +65,8 @@ case class UpperBound(high : Double) extends Bound{
 	}
 	def closestPoint(x : Double) = if (contains(x)) x else high
 	override def high_ = Some(high)
+	def lowPoint : Double = high - 1.0
+	def highPoint : Double = high 
 }
 
 
@@ -77,5 +86,7 @@ case class TwoSidedBound(low : Double, high : Double) extends Bound{
 			high
 	override def low_ = Some(low)
 	override def high_ = Some(high)
+	def lowPoint : Double = low
+	def highPoint : Double = high 
 }
 
