@@ -1,3 +1,1 @@
-To launch the server, enter the following at a cygwin command line prompt
-
-java -classpath `cygpath.exe -wp lib/*:target/scala_2.8.0/classes/`  kalahari.ExcelBridge
+A C utility for interpolating surfaces

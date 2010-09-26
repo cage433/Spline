@@ -14,9 +14,11 @@ object Kalahari{
 					yield x * i + j).toArray
 	}}
 	def mysum(arr : Array[Double]) : Double = {
+		println("arr = " + arr.mkString(", "))
 		(0.0 /: arr)(_+_)
 	}
 	def mysum2(arr : Array[Any]) : Double = {
+		println("any arr = " + arr.mkString(", "))
 		(0.0 /: arr.filter(_.isInstanceOf[Double]).map(_.asInstanceOf[Double]))(_+_)
 	}
 
@@ -58,6 +60,39 @@ object Kalahari{
 			}
 		}
 	}
+
+
+	def constrainedSplineSurface(
+		xAxis : Array[Double],
+		yAxis : Array[Double],
+		knownValues : Array[Array[Any]],
+		newXAxis : Array[Double],
+		newYAxis : Array[Double]
+	) : Array[Array[Double]] = {
+
+		var points = Map[(Double, Double), Double]()
+		yAxis.zip(knownValues).foreach{
+			case (y, rowVec) =>
+				xAxis.zip(rowVec).foreach{
+					case (x, z) =>
+						if (z.isInstanceOf[Double])
+							points = points + ((x, y) ->  z.asInstanceOf[Double])
+			}
+		}
+		if (points.isEmpty){
+			Array.fill(yAxis.size)(Array.fill(xAxis.size)(0.0))
+		} else {
+			val surface = new ConstrainedCubicSurface(
+				xAxis, 
+				yAxis, 
+				points,
+				newXAxis,
+				newYAxis
+			).surface
+			surface
+		}
+	}
+
 	def inputMatrix(m : Array[Array[Any]]) : Double = {
 		m.foreach{
 			vec =>
