@@ -106,6 +106,10 @@ class ConstrainedBasisCurve(val ts : Array[Double], val zs : Array[Double])
 
 	def addPoint(spread : BasisSpread) : ConstrainedCurve = {
 		assert(canAddPoint(spread))
+		val z0 = apply(spread.t0)
+		val z1 = apply(spread.t1)
+
+
 		return this
 	} 
 
@@ -162,12 +166,17 @@ class ConstrainedBasisCurve(val ts : Array[Double], val zs : Array[Double])
 	}
 
 	def apply(x_ : Double) : Double = {
-		if (ts.size <= 2)
+		if (ts.size == 0)
 			0.0
+		else if (ts.size == 1)
+			zs(0)
 		else if (x_ <= ts(0))
 			zs(0)
 		else if (x_ >= ts(n))
 			zs(n)
+		else if (ts.size == 2){
+			(zs(1) - zs(0)) / (ts(1) - ts(0)) * (x_ - ts(0)) + zs(0)
+		}
 		else {
 			val i = ts.lastIndexWhere(_ < x_)
 			a(i) + b(i) * x_ + c(i) * x_ * x_ + d(i) * x_ * x_ * x_

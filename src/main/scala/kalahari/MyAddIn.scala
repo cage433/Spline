@@ -63,33 +63,25 @@ object Kalahari{
 
 
 	def constrainedSplineSurface(
-		xAxis : Array[Double],
 		yAxis : Array[Double],
-		knownValues : Array[Array[Any]],
+		knownValues : Array[Any],
 		newXAxis : Array[Double],
 		newYAxis : Array[Double]
 	) : Array[Array[Double]] = {
 
-		var points = Map[(Double, Double), Double]()
+		var points = Map[Double, Double]()
 		yAxis.zip(knownValues).foreach{
-			case (y, rowVec) =>
-				xAxis.zip(rowVec).foreach{
-					case (x, z) =>
-						if (z.isInstanceOf[Double])
-							points = points + ((x, y) ->  z.asInstanceOf[Double])
-			}
+			case (y, z) =>
+				if (z.isInstanceOf[Double])
+					points = points + (y ->  z.asInstanceOf[Double])
 		}
-		if (points.isEmpty){
-			Array.fill(yAxis.size)(Array.fill(xAxis.size)(0.0))
-		} else {
-			val surface = new ConstrainedCubicSurface(
-				xAxis, 
-				yAxis, 
-				points,
-				newXAxis,
-				newYAxis
-			).surface
-			surface
+		val cs = new ConstrainedBasisCurve(points)
+		newYAxis.map{
+			y =>
+				newXAxis.map{
+					x =>
+						cs(x, y)
+				}
 		}
 	}
 
