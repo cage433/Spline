@@ -15,9 +15,10 @@ class ConstrainedCubicSurface(
 			else
 				None
 	}.toArray
+
 	val cs = {
 		val (xs, ys) = curve.unzip
-		ConstrainedCubicSpline(xs.toArray, ys.toArray)
+		new ConstrainedBasisCurve(xs.toArray, ys.toArray)
 	}
 
 	def surface : Array[Array[Double]] = {
@@ -29,6 +30,5 @@ class ConstrainedCubicSurface(
 				}
 		}
 	}
-
 
 }

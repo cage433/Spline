@@ -1,167 +1,126 @@
 package kalahari
 
+class Period(val t0 : Double, val t1 : Double){
+	def contains (t : Double) = t0 <= t && t <= t1
+	def toList = List(t0, t1)
+}
+class BasisSpread(t0 : Double, t1 : Double, val rate : Double)
+	extends Period(t0, t1)
+{
+	val T = t1 - t0
+}
+class SpotBasisSpread(val t : Double, rate : Double) 
+	extends BasisSpread(0, t, rate)
+
 trait ConstrainedCurve{
 	val eps = ConstrainedCurve.eps
-	def canAddPoint(x1 : Double, x2 : Double, y : Double) : Boolean
-	def addPoint(x1 : Double, x2 : Double, y : Double) : ConstrainedCurve
+	def canAddPoint(spread : BasisSpread) : Boolean
+	def addPoint(spread : BasisSpread) : ConstrainedCurve
 	def apply(x : Double) : Double
 	def apply(t0 : Double, T : Double) : Double = {
 		val t1 = t0 + T
 		val y0 = apply(t0)
 		val y1 = apply(t1)
-		ConstrainedCurve.impliedForwardFromFrontAndBack(t0, y0, t1, y1)
+		ConstrainedCurve.impliedForwardFromFrontAndBack(
+			new SpotBasisSpread(t0, y0), 
+			new SpotBasisSpread(t1, y1)
+		).rate
 	}
 	def almostEqual(x0 : Double, x1 : Double) = (x0 - x1).abs < eps
-	def distance(x1 : Double, x2 : Double, y : Double) : Double
 }
 
 object ConstrainedCurve{
 	val eps = 1e-6
 
-	def impliedFrontFromForwardAndBack(tBack : Double, yBack : Double, T : Double, y : Double) : Double = {
-		val tFront = tBack - T
-		assert(tFront > 0, "Front time <= 0, " + tFront)
-
-		(yBack * tBack - y * T) / tFront
+	def impliedFrontFromForwardAndBack(fwd : BasisSpread, back : SpotBasisSpread) : SpotBasisSpread = {
+		new SpotBasisSpread(fwd.t0, (back.rate * back.t - fwd.rate * fwd.T) / fwd.t0)
 	}
 
-	def impliedBackFromForwardAndFront(tFront : Double, yFront : Double, T : Double, y : Double) : Double = {
-		val tBack = tFront + T
-		(yFront * tFront + y * T) / tBack
+	def impliedBackFromForwardAndFront(fwd : BasisSpread, front : SpotBasisSpread) : SpotBasisSpread = {
+		new SpotBasisSpread(fwd.t1, (front.rate * front.t + fwd.rate * fwd.T) / fwd.t1)
 	}
 
 	def impliedForwardFromFrontAndBack(
-		tFront : Double, 
-		yFront : Double,
-		tBack : Double,
-		yBack : Double
-	) : Double = {
-		(yBack * tBack - yFront * tFront) / (tBack - tFront)
+		front : SpotBasisSpread,
+		back : SpotBasisSpread
+	) : BasisSpread = {
+		new BasisSpread(
+			front.t, back.t, (back.rate * back.t - front.rate * front.t) / (back.t - front.t)
+		)
 	}
 }
 
-object EmptyConstrainedCurve extends ConstrainedCurve{
-	def canAddPoint(x1 : Double, x2 : Double, y : Double)  = true
-	def addPoint(x1 : Double, x2 : Double, y : Double) = {
-		new ProperConstrainedSpline(Array(x1, x2).sortWith(_<_), Array(y, y))
-	}
-	def apply(x : Double) = 0
-
-	// So that earliest points are added first
-	def distance(x1 : Double, x2 : Double, y : Double) = x1
-}
-
-class SinglePointCurve(x : Double, y : Double) extends ConstrainedCurve{
-	def canAddPoint(x1 : Double, x2 : Double, y_ : Double)  = {
-		x < x1 - eps || x > x2 + eps
-	}
-	
-	def addPoint(x1 : Double, x2 : Double, y_ : Double) = {
-		new ProperConstrainedSpline(Map(x -> y, x1 -> y_, x2 -> y_))
-	}
-	def apply(x_ : Double) = y
-	// So that earliest points are added first
-	def distance(x1 : Double, x2 : Double, y : Double) = x1
-}	
-
-
-class ProperConstrainedSpline(x : Array[Double], y : Array[Double])
+class ConstrainedBasisCurve(val ts : Array[Double], val zs : Array[Double])
 	extends ConstrainedCurve
 {
-	require(x.size >= 2, "x axis needs at least two points")
-	require(x.size == y.size, "Axes need to be the same size")
-	require(x.toList == x.toList.sortWith(_<_), "x axis must be sorted")
-
+	require(ts.size == zs.size, "Axes need to be the same size")
+	require(ts.toList == ts.toList.sortWith(_<_), "time axis must be sorted")
 
 	def this(map : Map[Double, Double]) = this(
 		map.keys.toArray.sortWith(_<_),
 		map.keys.toArray.sortWith(_<_).map(map)
 	)
 
-	def leftAndRightBounds(x1 : Double, x2 : Double, y_ : Double) : (Bound, Bound) = {
-		var bound1 = bound(x1)
-		var bound2 = bound(x2)
-		val y1 = apply(x1)
-		val y2 = apply(x2)
-		val rImplied = bound1.map(ConstrainedCurve.impliedBackFromForwardAndFront(x1, _, x2 - x1, y_))
-		bound2 = rImplied.intersection(bound2)
-		val lImplied = bound2.map(ConstrainedCurve.impliedFrontFromForwardAndBack(x2, _, x2 - x1, y_))
-		bound1 = lImplied intersection bound1
-		(bound1, bound2)
-	}
-		
-	def canAddPoint(x1 : Double, x2 : Double, y_ : Double) = {
-		val (l, r) = leftAndRightBounds(x1, x2, y_) 
-		!l.isEmpty && ! r.isEmpty
-	}
-
-	def distance(x1 : Double, x2 : Double, y_ : Double) = {
-		assert(canAddPoint(x1, x2, y_))
-		val (bound1, bound2) = leftAndRightBounds(x1, x2, y_) 
-		val y1 = apply(x1)
-		val newY1 = bound1.closestPoint(y1)
-		(y1 - newY1).abs
-	}
-
-	// for testing only
-		
-
-	def addPoint(x1 : Double, x2 : Double, y_ : Double) = {
-		assert(canAddPoint(x1, x2, y_))
-		val (bound1, bound2) = leftAndRightBounds(x1, x2, y_) 
-		val y1 = apply(x1)
-		val y2 = apply(x2)
-
-		val newY1 = bound1.closestPoint(y1)
-		val newY2 = y_ * (x2 - x1) / x2 - y1 * x1 / x2
-		new ProperConstrainedSpline(
-			Map(x1 -> newY1, x2 -> newY2) ++ x.zip(y)
+	def spotRate(t : Double) = new SpotBasisSpread(t, apply(t))
+	def forwardRate(period : Period) : BasisSpread = {
+		ConstrainedCurve.impliedForwardFromFrontAndBack(
+			spotRate(period.t0),
+			spotRate(period.t1)
 		)
+	}
+
+	def maxMinSpreads(period : Period) : (BasisSpread, BasisSpread)  = {
+		def boundingPeriod(t : Double) : Period = {
+			val t0 = ts.lastIndexWhere(_ <= t) match {
+				case -1 => ts(0)
+				case i => ts(i)
+			}
+			val t1 = ts.find(_ >= t) match {
+				case Some(t_) => t_
+				case None => ts.last
+			}
+			new Period(t0, t1)
+		}
+		val (za, zb) = apply(boundingPeriod(period.t0))
+		val (zc, zd) = apply(boundingPeriod(period.t1))
+		val minFwd = ConstrainedCurve.impliedForwardFromFrontAndBack(
+			new SpotBasisSpread(period.t0, za max zb),
+			new SpotBasisSpread(period.t1, zc min zd)
+		).rate
+		val maxFwd = ConstrainedCurve.impliedForwardFromFrontAndBack(
+			new SpotBasisSpread(period.t0, za min zb),
+			new SpotBasisSpread(period.t1, zc max zd)
+		).rate
+		(new BasisSpread(period.t0, period.t1, minFwd), new BasisSpread(period.t0, period.t1, maxFwd))
+	}
+
+	def apply(period : Period) : (Double, Double) = (
+		apply(period.t0),
+		apply(period.t1)
+	)
+
+	def canAddPoint(spread : BasisSpread) : Boolean = {
+		val (minSpread, maxSpread) = maxMinSpreads(spread)
+		minSpread.rate <= spread.rate && spread.rate <= maxSpread.rate
+	}
+
+	def addPoint(spread : BasisSpread) : ConstrainedCurve = {
+		assert(canAddPoint(spread))
+		return this
 	} 
 
-	private def sign(x : Double) = {
-		if (x < 0)
-			-1
-		else if (x > 0)
-			1
-		else
-			0
-	}
-
-	private lazy val leftSlope = sign( y(1) - y(0) ) 
-	private lazy val rightSlope = sign( y(n) - y(n - 1) ) 
-
-	def bound(x_ : Double) : Bound = {
-		if (x_ <= x(0)){
-			leftSlope match {
-				case -1 => LowerBound(y(0))
-				case 0 => TwoSidedBound(y(0), y(0))
-				case 1 => UpperBound(y(0))
-			}
-		} else if (x_ >= x(n)) {
-			rightSlope match {
-				case -1 => UpperBound(y.last)
-				case 0 => TwoSidedBound(y.last, y.last)
-				case 1 => LowerBound(y.last)
-			}
-		} else {
-			val i = x.lastIndexWhere(_ < x_)
-			TwoSidedBound(y(i) min y(i + 1), y(i) max (y(i + 1)))
-		}
-	}
-
-	val n = x.size - 1
+	val n = ts.size - 1
 	val fencePosts = 0 to n
 	val midPosts = 1 to n - 1
 	val fenceWires = 0 to n - 1
 
 
-	def fencePostArray() = Array.fill(x.size)(0.0)
-	def fenceWireArray() = Array.fill(x.size - 1)(0.0)
+	def fencePostArray() = Array.fill(ts.size)(0.0)
+	def fenceWireArray() = Array.fill(ts.size - 1)(0.0)
 
 	val D = fencePostArray()
-	def dx(i : Int) : Double = x(i + 1) - x(i)
-	def dy(i : Int) : Double = y(i + 1) - y(i)
+	def dx(i : Int) : Double = ts(i + 1) - ts(i)
+	def dy(i : Int) : Double = zs(i + 1) - zs(i)
 	def diff(i : Int) : Double = {dy(i) / dx(i)}
 
 	for (i <- midPosts){
@@ -195,31 +154,24 @@ class ProperConstrainedSpline(x : Array[Double], y : Array[Double])
 
 	for (i <- fenceWires){
 		d(i) = (R(i) - L(i)) / (6.0 * dx(i))
-		val x0 = x(i)
-		val x1 = x(i + 1)
+		val x0 = ts(i)
+		val x1 = ts(i + 1)
 		c(i) = ( x1 * L(i) - x0 * R(i) ) / (2.0 * dx(i))
 		b(i) = ( dy(i) - c(i) * (x1 * x1 - x0 * x0) - d(i) * (x1 * x1 * x1 - x0 * x0 * x0) ) / dx(i)
-		a(i) = y(i) - b(i) * x0 - c(i) * x0 * x0 - d(i) * x0 * x0 * x0
+		a(i) = zs(i) - b(i) * x0 - c(i) * x0 * x0 - d(i) * x0 * x0 * x0
 	}
 
 	def apply(x_ : Double) : Double = {
-		if (x_ <= x(0))
-			y(0)
-		else if (x_ >= x(n))
-			y(n)
+		if (ts.size <= 2)
+			0.0
+		else if (x_ <= ts(0))
+			zs(0)
+		else if (x_ >= ts(n))
+			zs(n)
 		else {
-			val i = x.lastIndexWhere(_ < x_)
+			val i = ts.lastIndexWhere(_ < x_)
 			a(i) + b(i) * x_ + c(i) * x_ * x_ + d(i) * x_ * x_ * x_
 		}
 	}
 }
 
-object ConstrainedCubicSpline{
-	def apply(x : Array[Double], y : Array[Double]) : ConstrainedCurve = {
-		x.size match {
-			case 0 => EmptyConstrainedCurve
-			case 1 => new SinglePointCurve(x(0), y(0))
-			case _ => new ProperConstrainedSpline(x, y)
-		}
-	}
-}

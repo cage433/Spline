@@ -30,33 +30,11 @@ class ConstrainedCubicSplineTests extends FunSuite with TestUtils{
 			assert((fn(x) - cs(x)) < 1e-3, "Expected " + fn(x) + ", got " + cs(x))
 		}
 	}
-			
-	test("one point"){
-		val x = Array(7.0)
-		val y = Array(5.5)
-
-		testRange(
-			5.0 to 8.0 by 0.1,
-			ConstrainedCubicSpline(x, y),
-			extrapolateFlat(x, y, {_ : Double => 5.5})
-		)
-	}
-
-	test("two points"){
-		val x = Array(0.0, 1.0)
-		val y = Array(0.0, 1.0)
-
-		testRange(
-			-1.0 to 2.0 by 0.1,
-			ConstrainedCubicSpline(x, y),
-			extrapolateFlat(x, y, {x : Double => x})
-		)
-	}
 
 	test("straight line"){
 		val x = Array(0.0, 1.0, 2.0, 3.0)
 		val y = Array(0.0, 1.0, 2.0, 3.0)
-		val cs = ConstrainedCubicSpline(x, y)
+		val cs = new ConstrainedBasisCurve(x, y)
     (0.0 to 3.0 by 0.01).foreach{
       case x =>
         assert((x - cs(x)) < 1e-3, "Expected " + x + ", got " + cs(x))
@@ -66,7 +44,7 @@ class ConstrainedCubicSplineTests extends FunSuite with TestUtils{
 	test("log"){
 		val x = (1.0 to 5.0 by 0.1).toArray
 		val y = x.map(math.log)
-		val cs = ConstrainedCubicSpline(x, y)
+		val cs = new ConstrainedBasisCurve(x, y)
 		testRange(
 			1.0 to 5.0 by 0.01,
 			cs,
@@ -75,7 +53,7 @@ class ConstrainedCubicSplineTests extends FunSuite with TestUtils{
 	}
 
 	test("implied points"){
-		val curve = new ProperConstrainedSpline(
+		val curve = new ConstrainedBasisCurve(
 			Map(
 				0.0 -> 0.0,
 				1.0 -> 1.0,
@@ -88,43 +66,17 @@ class ConstrainedCubicSplineTests extends FunSuite with TestUtils{
 			val y1 = curve(t1)
 			val T = t1 - t0
 			val y = curve(t0, T)
-			val y1_imp = ConstrainedCurve.impliedBackFromForwardAndFront(t0, y0, T, y)
+			val y1_imp = ConstrainedCurve.impliedBackFromForwardAndFront(
+				new BasisSpread(t0, t1, y),
+				new SpotBasisSpread(t0, y0)
+			).rate
 			assert((y1_imp - y1).abs < ConstrainedCurve.eps, "Not close enough " + y1_imp + " vs " + y1)
-			val y0_imp = ConstrainedCurve.impliedFrontFromForwardAndBack(t1, y1, T, y)
+			val y0_imp = ConstrainedCurve.impliedFrontFromForwardAndBack(
+				new BasisSpread(t0, t1, y),
+				new SpotBasisSpread(t1, y1)
+			).rate
 			assert((y0_imp - y0).abs < ConstrainedCurve.eps, "Not close enough " + y0_imp + " vs " + y0)
 		}
-	}
-
-	test("adding points"){
-		val curve = new ProperConstrainedSpline(
-			Map(
-				0.0 -> 0.0,
-				1.0 -> 1.0,
-				2.0 -> 1.5,
-				3.0 -> 1.8
-			)
-		)
-		val t0 = 0.5
-		val bound0 = curve.bound(t0)
-		val t1 = 2.5
-		val bound1 = curve.bound(t1)
-		val (low0, high0) = (bound0.lowPoint, bound0.highPoint)
-		val (low1, high1) = (bound1.lowPoint, bound1.highPoint)
-
-		val yFwdA = ConstrainedCurve.impliedForwardFromFrontAndBack(t0, low0, t1, high1)
-		assert(curve.canAddPoint(t0, t1, yFwdA))
-
-		val yFwdB = ConstrainedCurve.impliedForwardFromFrontAndBack(t0, low0 - 0.1, t1, high1)
-		assert(!curve.canAddPoint(t0, t1, yFwdB))
-
-		val yFwdC = ConstrainedCurve.impliedForwardFromFrontAndBack(t0, (low0 + high0) / 2.0, t1, high1)
-		assert(curve.canAddPoint(t0, t1, yFwdC))
-
-		val yFwdD = ConstrainedCurve.impliedForwardFromFrontAndBack(t0, low0, t1, high1 + 0.01)
-		assert(!curve.canAddPoint(t0, t1, yFwdD))
-
-		val yFwdE = ConstrainedCurve.impliedForwardFromFrontAndBack(t0, low0, t1, (low1 + high1) / 2.0)
-		assert(curve.canAddPoint(t0, t1, yFwdE))
 	}
 
 }
