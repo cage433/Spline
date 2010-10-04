@@ -7,6 +7,10 @@ import org.boris.xlloop.reflect._
 
 class ExcelBridge
 
+/**
+* Uses reflection to expose all the methods in the
+* Kalahari object to Excel. At present there is only one
+*/
 object ExcelBridge extends Application{
         // Create function server on the default port
         val fs = new FunctionServer()
