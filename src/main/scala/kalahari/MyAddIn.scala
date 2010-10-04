@@ -17,12 +17,12 @@ object Kalahari{
 				if (z.isInstanceOf[Double])
 					points = points + (y ->  z.asInstanceOf[Double])
 		}
-		val cs = new ConstrainedBasisCurve(points)
+		val cs = new ConstrainedBasisSurface(points)
 		newYAxis.map{
 			y =>
 				newXAxis.map{
 					x =>
-						cs(x, y)
+						cs.forwardRate(x, y)
 				}
 		}
 	}
