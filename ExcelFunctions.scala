@@ -22,7 +22,7 @@ object Kalahari{
 			y =>
 				newXAxis.map{
 					x =>
-						cs.forwardRate(x, y)
+						cs.forwardRate(x, x + y)
 				}
 		}
 	}

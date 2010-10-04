@@ -17,7 +17,7 @@ object ExcelBridge extends Application{
 
         // Create a reflection function handler and add the Math methods
         val rfh = new ReflectFunctionHandler()
-        rfh.addMethods("Kalahari.", classOf[Kalahari])
+        rfh.addMethods("Kalahari.", classOf[ExcelFunctions])
 
         // Create a function information handler to register our functions
         val firh = new FunctionInformationHandler()
