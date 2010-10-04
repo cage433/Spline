@@ -1,8 +1,8 @@
 package kalahari
 
-class Kalahari{
+class ExcelFunctions{
 }
-object Kalahari{
+object ExcelFunctions{
 
 	def constrainedSplineSurface(
 		yAxis : Array[Double],
