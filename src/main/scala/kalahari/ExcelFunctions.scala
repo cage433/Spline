@@ -52,7 +52,9 @@ object ExcelFunctions{
     forwardRates.foreach{
       row =>
         if (row.forall(_.isInstanceOf[Double])){
-          val (t0, t1, zFwd) = (row(0).asInstanceOf[Double], row(1).asInstanceOf[Double], row(2).asInstanceOf[Double])
+          val (t0, tLength, zFwd) = (row(0).asInstanceOf[Double], row(1).asInstanceOf[Double], row(2).asInstanceOf[Double])
+	val t1 = tLength + t0
+	//println("Adding " + t0 + ", " + t1 + ", " + zFwd)
           cs = cs.addForwardRate(t0, t1, zFwd, alpha)
         }
     }
