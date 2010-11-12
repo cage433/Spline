@@ -9,13 +9,13 @@ class BasisSurfaceTests extends FunSuite with TestUtils{
   test("Stay within bounds"){
     for( t <- 1.1 to 1.9 by 0.1;
         alpha <- List(0.1, 0.5, 0.9)){
-      val (low, high) = curve.rateBound(t, alpha)
+      val (low, high) = curve.zeroStartBoundingBox(t, alpha)
         assert(low >= 1.3)
         assert(high <= 1.5)
     }
     for( t <- 2.1 to 2.9 by 0.1;
         alpha <- List(0.1, 0.5, 0.9)){
-      val (low, high) = curve.rateBound(t, alpha)
+      val (low, high) = curve.zeroStartBoundingBox(t, alpha)
         assert(low === 1.5)
         assert(high === 1.5)
     }
@@ -24,7 +24,7 @@ class BasisSurfaceTests extends FunSuite with TestUtils{
 
   test("Alpha relaxes bounds"){
     val alphas = List(0.1, 0.5, 0.9)
-    val bounds = alphas.map(curve.rateBound(4.5, _))
+    val bounds = alphas.map(curve.zeroStartBoundingBox(4.5, _))
     bounds.zip(bounds.tail).foreach{
       case ((l1, h1), (l2, h2)) =>
         assert(l1 > l2)
@@ -33,14 +33,14 @@ class BasisSurfaceTests extends FunSuite with TestUtils{
   }
 
   test("Bounds exact at node"){
-    val (low, high) = curve.rateBound(2.0, 0.5)
+    val (low, high) = curve.zeroStartBoundingBox(2.0, 0.5)
     assert(low === 1.5)
     assert(high === 1.5)
   }
 
   def checkRatesConsistent(t0 : Double, t1 : Double, z0 : Double, z1 : Double, zFwd : Double, alpha : Double){
     def checkRateBound(t : Double, z : Double){
-      val (zLow, zHigh) = curve.rateBound(t, alpha)
+      val (zLow, zHigh) = curve.zeroStartBoundingBox(t, alpha)
       assert(zLow <= z)
       assert(z <= zHigh)
     }

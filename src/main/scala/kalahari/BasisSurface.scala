@@ -15,7 +15,7 @@ class BasisSurface(val zeroStartTimes : Array[Double], val zeroStartSpreads : Ar
 		map.keys.toArray.sortWith(_<_).map(map)
 	)
 
-	val spline = new ConstrainedCubicSpline(zeroStartTimes, zeroStartSpreads)
+	private val spline = new ConstrainedCubicSpline(zeroStartTimes, zeroStartSpreads)
 
   /**
    * Interpolates to find a zero-start rate
@@ -35,14 +35,19 @@ class BasisSurface(val zeroStartTimes : Array[Double], val zeroStartSpreads : Ar
    * Find the two times in our zero-start times that bound this. Used
    * to determine the bounding box used to fit a forward start rate
    */
-  def boundingTimes(t : Double) = {
+  private def boundingTimes(t : Double) = {
     val i = zeroStartTimes.findIndexOf(_ > t)
     if (i < 1)
       throw new Exception("Time " + t + " is not bounded by two others in range " + zeroStartTimes)
     (zeroStartTimes(i - 1), zeroStartTimes(i))
   }
 
-  def rateBound(t : Double, alpha : Double) : (Double, Double) = {
+  /**
+   * We fit forward start spreads by adding two zero-start points to this surface (if possible). This
+   * tells us the min/max rates we can pick for this time point. It depends on the relaxation parameter alpha. 
+   * alpha should be in the range [0, 1], where 0 permits no change to the existing surface
+   */
+  def zeroStartBoundingBox(t : Double, alpha : Double) : (Double, Double) = {
     val (t0, t1) = boundingTimes(t)
     val List(z0, z1, z) = List(t0, t1, t).map(spotRate(_))
     val zMax = z0 max z1
@@ -59,16 +64,21 @@ class BasisSurface(val zeroStartTimes : Array[Double], val zeroStartSpreads : Ar
     }
   }
 
+  /**
+   * From the bounding boxes for the two zero start rates we
+   * determine the min/max values that we can use to fit a
+   * forward rate for the given relaxation paameter alpha
+   */
   def forwardRateBounds(t0 : Double, t1 : Double, alpha : Double) : (Double, Double) = {
-    val (z0Low, z0High) = rateBound(t0, alpha)
-    val (z1Low, z1High) = rateBound(t1, alpha)
+    val (z0Low, z0High) = zeroStartBoundingBox(t0, alpha)
+    val (z1Low, z1High) = zeroStartBoundingBox(t1, alpha)
     val maxRate = (z1High * t1 - z0Low * t0) / (t1 - t0)
     val minRate = (z1Low * t1 - z0High * t0) / (t1 - t0)
     (minRate, maxRate)
   }
 
   def rateBoundWidth(t : Double, alpha : Double) = {
-    val (zLow, zHigh) = rateBound(t, alpha)
+    val (zLow, zHigh) = zeroStartBoundingBox(t, alpha)
     zHigh - zLow
   }
 
