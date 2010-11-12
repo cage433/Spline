@@ -2,30 +2,44 @@ package kalahari
 
 import RateCalculator._
 
-class BasisSurface(val times : Array[Double], val spotSpreads : Array[Double])
+/**
+ * Creates a basis surface from a strip of zero-start basis swaps
+ */
+class BasisSurface(val zeroStartTimes : Array[Double], val zeroStartSpreads : Array[Double])
 {
-	require(times.size == spotSpreads.size, "Axes need to be the same size")
-	require(times.toList == times.toList.sortWith(_<_), "time axis must be sorted")
+	require(zeroStartTimes.size == zeroStartSpreads.size, "Axes need to be the same size")
+	require(zeroStartTimes.toList == zeroStartTimes.toList.sortWith(_<_), "time axis must be sorted")
 
 	def this(map : Map[Double, Double]) = this(
 		map.keys.toArray.sortWith(_<_),
 		map.keys.toArray.sortWith(_<_).map(map)
 	)
 
-	val spline = new ConstrainedCubicSpline(times, spotSpreads)
+	val spline = new ConstrainedCubicSpline(zeroStartTimes, zeroStartSpreads)
 
+  /**
+   * Interpolates to find a zero-start rate
+   */
 	def spotRate(t : Double) : Double = spline(t)
+
+  /**
+   * Determines a forward-start rate from two zero-start rates
+   */
 	def forwardRate(t0 : Double, t1 : Double) : Double = {
 		val bs0 = spotRate(t0)
 		val bs1 = spotRate(t1)
 		(bs1 * t1 - bs0 * t0) / (t1 - t0)
 	}
 
+  /**
+   * Find the two times in our zero-start times that bound this. Used
+   * to determine the bounding box used to fit a forward start rate
+   */
   def boundingTimes(t : Double) = {
-    val i = times.findIndexOf(_ > t)
+    val i = zeroStartTimes.findIndexOf(_ > t)
     if (i < 1)
-      throw new Exception("Time " + t + " is not bounded by two others in range " + times)
-    (times(i - 1), times(i))
+      throw new Exception("Time " + t + " is not bounded by two others in range " + zeroStartTimes)
+    (zeroStartTimes(i - 1), zeroStartTimes(i))
   }
 
   def rateBound(t : Double, alpha : Double) : (Double, Double) = {
@@ -72,14 +86,14 @@ class BasisSurface(val times : Array[Double], val spotSpreads : Array[Double])
   }
 
   def addForwardRate(t0 : Double, t1 : Double, zFwd : Double, alpha : Double) : BasisSurface = {
-    if (t0 < times.head)
+    if (t0 < zeroStartTimes.head)
       return this
-    if (t1 > times.last)
+    if (t1 > zeroStartTimes.last)
       return this
     val(zFwdLow, zFwdHigh) = forwardRateBounds(t0, t1, alpha)
     val zFwdActual = (zFwd min zFwdHigh) max zFwdLow
     val (z0, z1) = bestFittingSpotRates(t0, t1, zFwdActual, alpha)
-    var curvePoints = times.zip(spotSpreads).toMap
+    var curvePoints = zeroStartTimes.zip(zeroStartSpreads).toMap
     curvePoints += t0 -> z0
     curvePoints += t1 -> z1
 
