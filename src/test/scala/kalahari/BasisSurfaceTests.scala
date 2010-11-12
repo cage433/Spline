@@ -108,7 +108,7 @@ class BasisSurfaceTests extends FunSuite with TestUtils{
     val zFwd = zfLow + 0.75 * (zfHigh - zfLow)
     val newCurve = curve.addForwardRate(t0, t1, zFwd, alpha)
     assert(zFwd === newCurve.forwardRate(t0, t1))
-    assert(zFwd === curve.forwardRate(t0, t1))
+    assert(zFwd != curve.forwardRate(t0, t1))
   }
 
 }
