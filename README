@@ -36,6 +36,10 @@ or from Cygwin
     $ java -cp `cygpath lib/*:target/scala_2.8.0/classes` kalahari.ExcelBridge
 
 
+4. Running the spreadsheet - 
+
+Simply open the spreadsheet InterpolationExamples.xlsx - play with the numbers in yellow and hit F9
+
 And that's it
 
 
