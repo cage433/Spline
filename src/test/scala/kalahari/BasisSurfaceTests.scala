@@ -5,7 +5,7 @@ class BasisSurfaceTests extends FunSuite with TestUtils{
   val ts = Array(1.0, 2.0, 3.0, 5.0)
   val zs = Array(1.3, 1.5, 1.5, 2.0)
 
-  val curve = new ConstrainedBasisSurface(ts, zs)
+  val curve = new BasisSurface(ts, zs)
   test("Stay within bounds"){
     for( t <- 1.1 to 1.9 by 0.1;
         alpha <- List(0.1, 0.5, 0.9)){

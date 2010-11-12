@@ -1,1 +1,41 @@
-A C utility for interpolating surfaces
+A utility for generating basis surfaces
+
+1. Building the app
+
+This app is built using SBT, the scala simple build tool http://code.google.com/p/simple-build-tool/. It is included in this project.
+
+To build, simply cd to the Spline directory, then 
+
+    $ java -jar sbt-launch-0.7.4.jar
+
+This will give you a command line prompt, simply enter 
+
+    > test
+
+This will compile the code and its test classes and run the tests.
+
+2. Installing the xlloop addin
+
+To run the Excel example, excel needs an add-in called xlloop, which allows external functions
+to be called in several languages. This has already been added to Excel in the virtual machine
+you gave me access to. If you need to run the example on another machine simply install the add-in
+
+    Spline/xlloop/bin/xlloop-0.3.1.xll
+
+From Excel it's simply Big Button on the Top Left -> Excel Options -> Add Ins (Sorry if that's teaching you to suck eggs)
+
+
+3. Launching the server
+
+In order for Excel to call the code a server needs to be launched. From the command line (in windows)
+
+    $ java -cp lib\*;target\scala_2.8.0\classes kalahari.ExcelBridge
+
+or from Cygwin
+
+    $ java -cp `cygpath lib/*:target/scala_2.8.0/classes` kalahari.ExcelBridge
+
+
+And that's it
+
+

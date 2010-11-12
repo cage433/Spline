@@ -2,7 +2,7 @@ package kalahari
 
 import RateCalculator._
 
-class ConstrainedBasisSurface(val times : Array[Double], val spotSpreads : Array[Double])
+class BasisSurface(val times : Array[Double], val spotSpreads : Array[Double])
 {
 	require(times.size == spotSpreads.size, "Axes need to be the same size")
 	require(times.toList == times.toList.sortWith(_<_), "time axis must be sorted")
@@ -71,7 +71,7 @@ class ConstrainedBasisSurface(val times : Array[Double], val spotSpreads : Array
     }
   }
 
-  def addForwardRate(t0 : Double, t1 : Double, zFwd : Double, alpha : Double) : ConstrainedBasisSurface = {
+  def addForwardRate(t0 : Double, t1 : Double, zFwd : Double, alpha : Double) : BasisSurface = {
     if (t0 < times.head)
       return this
     if (t1 > times.last)
@@ -83,7 +83,7 @@ class ConstrainedBasisSurface(val times : Array[Double], val spotSpreads : Array
     curvePoints += t0 -> z0
     curvePoints += t1 -> z1
 
-    new ConstrainedBasisSurface(curvePoints)
+    new BasisSurface(curvePoints)
   }
 
 }

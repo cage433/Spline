@@ -11,12 +11,12 @@ object ExcelFunctions{
 				if (z.isInstanceOf[Double])
 					points = points + (y ->  z.asInstanceOf[Double])
 		}
-		val cs = new ConstrainedBasisSurface(points)
+		val cs = new BasisSurface(points)
 		cs
   }
 
   private def buildSurfaceMatrix(
-    cs : ConstrainedBasisSurface, 
+    cs : BasisSurface, 
     newXAxis : Array[Double], 
     newYAxis : Array[Double]
   ) : Array[Array[Double]] = {
