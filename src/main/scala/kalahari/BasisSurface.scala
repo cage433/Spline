@@ -1,12 +1,24 @@
 package kalahari
 
-import RateCalculator._
+
+object RateCalculator{
+  def fwdRateFromSpot(t0 : Double, t1 : Double, z0 : Double, z1 : Double) = {
+    (z1 * t1 - z0 * t0) / (t1 - t0)
+  }
+  def frontRateFromFwdAndBack(t0 : Double, t1 : Double, zFwd : Double, z1 : Double) = {
+    (z1 * t1 - zFwd * (t1 - t0)) / t0
+  }
+  def backRateFromFwdAndFront(t0 : Double, t1 : Double, zFwd : Double, z0 : Double) = {
+    (z0 * t0 + zFwd * (t1 - t0)) / t1
+  }
+}
 
 /**
  * Creates a basis surface from a strip of zero-start basis swaps
  */
 class BasisSurface(val zeroStartTimes : Array[Double], val zeroStartSpreads : Array[Double])
 {
+  import RateCalculator._
 	require(zeroStartTimes.size == zeroStartSpreads.size, "Axes need to be the same size")
 	require(zeroStartTimes.toList == zeroStartTimes.toList.sortWith(_<_), "time axis must be sorted")
 
@@ -77,24 +89,46 @@ class BasisSurface(val zeroStartTimes : Array[Double], val zeroStartSpreads : Ar
     (minRate, maxRate)
   }
 
-  def rateBoundWidth(t : Double, alpha : Double) = {
+  /**
+   * Convenience method - returns the size of the bounding box
+   */
+  def boundingBoxWidth(t : Double, alpha : Double) = {
     val (zLow, zHigh) = zeroStartBoundingBox(t, alpha)
     zHigh - zLow
   }
 
-  def bestFittingSpotRates(t0 : Double, t1 : Double, fwdRate : Double, alpha : Double) = {
+  /**
+   * Finds the best spots rates that can be added given a forward rate, i.e with the least distortion
+   */ 
+  def bestFittingSpotRates(t0 : Double, t1 : Double, fwdRate : Double, alpha : Double) : (Double, Double) = {
+    // Find the spt rates for (t0, t1)
     val List(z0, z1) = List(t0, t1).map(spotRate(_))
-    val List(t0Bound, t1Bound) = List(t0, t1).map(rateBoundWidth(_, alpha))
+
+    // Find the width of the bounding boxes for (t0, t1)
+    val List(t0Bound, t1Bound) = List(t0, t1).map(boundingBoxWidth(_, alpha))
+
     if (t0Bound == 0){
+      // If the front bounding box has zero width (this will only happen
+      // if one of the points of the forward start rate exactly matches one
+      // of our zero start rates) then the back rate is constraine dby arbitrage
       (z0, backRateFromFwdAndFront(t0, t1, fwdRate, z0))
     } else if (t1Bound == 0){
+      // ditto for the back box
       (frontRateFromFwdAndBack(t0, t1, fwdRate, z1), z1)
     } else {
+      // With non-empty bounding boxes for forward and back rates we choose spot rates
+      // that are equidistant from the interpolated rates (measured using the relative distance
+      // toe thier relative boudning boxes
       val za = (z0 * t1Bound / t0Bound  + z1 - fwdRate * (t1 - t0) / t1) / (t1Bound / t0Bound + t0 / t1)
       (za, backRateFromFwdAndFront(t0, t1, fwdRate, za))
     }
   }
 
+  /** 
+   * Given a forward rate, create a new surface that matches this rate- if possible without too much
+   * distortion. If the boudning boxes of each spot rate are wide enough then the forward rate will
+   * be matched exactly - otherwise the maximal or minal rate implied by the boxes will be used
+   */
   def addForwardRate(t0 : Double, t1 : Double, zFwd : Double, alpha : Double) : BasisSurface = {
     if (t0 < zeroStartTimes.head)
       return this
@@ -110,16 +144,4 @@ class BasisSurface(val zeroStartTimes : Array[Double], val zeroStartSpreads : Ar
     new BasisSurface(curvePoints)
   }
 
-}
-
-object RateCalculator{
-  def fwdRateFromSpot(t0 : Double, t1 : Double, z0 : Double, z1 : Double) = {
-    (z1 * t1 - z0 * t0) / (t1 - t0)
-  }
-  def frontRateFromFwdAndBack(t0 : Double, t1 : Double, zFwd : Double, z1 : Double) = {
-    (z1 * t1 - zFwd * (t1 - t0)) / t0
-  }
-  def backRateFromFwdAndFront(t0 : Double, t1 : Double, zFwd : Double, z0 : Double) = {
-    (z0 * t0 + zFwd * (t1 - t0)) / t1
-  }
 }

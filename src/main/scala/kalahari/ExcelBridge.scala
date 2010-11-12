@@ -9,7 +9,7 @@ class ExcelBridge
 
 /**
 * Uses reflection to expose all the methods in the
-* Kalahari object to Excel. At present there is only one
+* ExcelFunctions object to Excel. 
 */
 object ExcelBridge extends Application{
         // Create function server on the default port

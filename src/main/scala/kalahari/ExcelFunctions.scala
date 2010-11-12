@@ -1,7 +1,15 @@
 package kalahari
 
+/**
+ * Shouldn't need this class but got weird errors without it
+ * when I tried to just use its corresponding Object
+ */
 class ExcelFunctions{
 }
+
+/**
+ * These are the functions that are expose to Excel
+ */
 object ExcelFunctions{
 
   private def buildSurface(yAxis : Array[Double], knownValues : Array[Any]) = {

@@ -94,8 +94,8 @@ class BasisSurfaceTests extends FunSuite with TestUtils{
     checkRatesConsistent(t0, t1, z0, z1, zFwd, alpha)
 
     // Chech relative differences from curve
-    val A = curve.rateBoundWidth(t0, alpha)
-    val B = curve.rateBoundWidth(t1, alpha)
+    val A = curve.boundingBoxWidth(t0, alpha)
+    val B = curve.boundingBoxWidth(t1, alpha)
     assert((z0 - curve.spotRate(t0)).abs / A === (z1 - curve.spotRate(t1)).abs / B)
   }
 
